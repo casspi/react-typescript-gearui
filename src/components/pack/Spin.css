@@ -1,0 +1,18 @@
+.ant-spin-modal {
+    position: fixed;
+    opacity: 0.7;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      overflow: hidden;
+      outline: 0;
+      -webkit-overflow-scrolling: touch;
+      filter: alpha(opacity=60);  
+      z-index: 3;
+      text-algin: center;
+      vertical-align: middle;
+      border-radius: 4px;
+      border: 1px solid #d2eafb;
+      background-color: #ecf6fd;
+  }
