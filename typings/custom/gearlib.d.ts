@@ -4,7 +4,7 @@ interface GearType {
   Number: number,
   Object: object,
   Function: Function,
-  Array: Array<any>,
+  Array<T>(): Array<T>,
   Undefined: undefined,
   RegExp: RegExp,
   Null: null,
