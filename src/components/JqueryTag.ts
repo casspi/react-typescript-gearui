@@ -31,6 +31,8 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
         this.bindAllEvents();
     }
 
+    protected getConcatInitialState() {}
+
     protected addOnEventsMethod() {
         for(let key in Events) {
             if(!this[key]) {

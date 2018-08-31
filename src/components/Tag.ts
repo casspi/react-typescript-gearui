@@ -1,6 +1,6 @@
 import * as ReactDOM from 'react-dom';
 import JqueryTag, { props as JqueryTagProps, state as JqueryTagState } from "./JqueryTag";
-import { ObjectUtil } from '../utils';
+import { ObjectUtil, UUID } from '../utils';
 export var props = {
     id: GearType.String,
     name: GearType.String,
@@ -12,6 +12,7 @@ export var props = {
     disabled: GearType.Boolean,
     visible: GearType.Boolean,
     class: GearType.String,
+    needUpdateToState: GearType.Array<string>(),
     ...JqueryTagProps
 }
 
@@ -29,7 +30,6 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
 
     //发生改变时不能被更新的属性
     protected cannotUpdate:GearArray<keyof S> = new GearArray<keyof state>(["name","id"]);
-
     constructor(props: P, context?: any) {
         super(props, context);
         this.state = <Readonly<S>>this.getInitState();
@@ -48,15 +48,25 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
     abstract getInitialState(): state;
 
     protected getConcatInitialState() {
-        if(this.getInitialState) {
-            let state = this.getInitialState();
-            if(super["getConcatInitialState"]) {
-                let superState = super["getConcatInitialState"]();
+        let state = this.getInitialState();
+        let __super = this.getSuper();
+        while(__super && __super.getSuper) {
+            let fn = __super.getInitialState;
+            if(fn) {
+                let superState = fn.bind(this)();
                 state = G.G$.extend(superState, state);
             }
-            return state;
+            __super = __super.getSuper();
         }
-        return {};
+        return state;
+    }
+
+    protected getSuper() {
+        let __proto__ = Object.getPrototypeOf(this.constructor);
+        if(__proto__ && __proto__.prototype) {
+            return __proto__.prototype;
+        }
+        return null;
     }
 
     //提供一個入口，可以在state生效之前刪除其中的内容
@@ -95,27 +105,44 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
     //父节点改变本节点的props的时候触发
     componentWillReceiveProps(nextProps: P) {
         let state: any = {};
-        for(let key in nextProps) {
-            let vInNextProps: any = nextProps[key];
-            let vInState: any = this.state[<any>key];
-            if(key in this.state && vInNextProps != vInState) {
-                state[<any>key] = vInNextProps;
+        if(nextProps.needUpdateToState) {
+            for(let i in nextProps.needUpdateToState) {
+                let key = nextProps.needUpdateToState[i];
+                let vInNextProps: any = nextProps[key];
+                let vInState: any = this.state[<any>key];
+                if(key in this.state && vInNextProps != vInState) {
+                    state[<any>key] = vInNextProps;
+                }
             }
         }
+        // for(let key in nextProps) {
+        //     let vInNextProps: any = nextProps[key];
+        //     let vInState: any = this.state[<any>key];
+        //     if(key in this.state && vInNextProps != vInState) {
+        //         state[<any>key] = vInNextProps;
+        //     }
+        // }
         let newState = this.afterReceiveProps(nextProps);
         if(newState && !G.G$.isEmptyObject(newState)) {
             state = G.G$.extend({}, state, newState);
         }
         //排除不能被更新的属性
-        for(let key in this.cannotUpdate) {
-            delete state[key];
+        if(this.cannotUpdate && this.cannotUpdate.toArray()) {
+            this.cannotUpdate.toArray().forEach(key => {
+                delete state[key];
+            });
         }
+        // let keys = [];
+        // let keys = ["onChange", "onBlur", "style", "onClick", "onFocus", "onKeyDown", "onKeyPress", "onKeyUp", "onMouseDown", "onMouseMove", "onMouseOut", "onMouseOver", "onMouseUp", "onPressEnter", "category"];
+        // keys.forEach(key => {
+        //     delete state[key];
+        // });
         this.setState(state);
     }
 
-    protected afterReceiveProps(nextProps: P): any{}
+    protected afterReceiveProps(nextProps: P): Partial<typeof props> {return {}};
 
-    protected afterRender(): void{}
+    protected afterRender(): void{};
     
     //获取公共state
     private getCommonsState(): state {
@@ -261,6 +288,10 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         if(style) {
             style.display = "none";
         }
+    }
+
+    protected getKey() {
+        return (this.state.name || this.state.id || UUID.get()) + "_key";
     }
 
 }

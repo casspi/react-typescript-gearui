@@ -26,6 +26,10 @@ export class Form<P extends (typeof props & FormComponentProps), S extends state
         super(props, context);
     }
 
+    afterReceiveProps(nextProps: P) {
+        return {};
+    }
+
     getInitialState(): state {
         this.values = {};
         let initFormTagState = this.getInitFormTagStates();
@@ -99,7 +103,9 @@ export class Form<P extends (typeof props & FormComponentProps), S extends state
                     let props: any = this.getFormTagProps(index, tagName);
                     let validation = this.getValidation(tagName);
                     //合并新的信息，将当前存储的tagname对应state信息合并到props，并传递给formTag
-                    props = G.G$.extend({}, childReactNode.props, props, this.state.formTagStates[tagName]);
+                    props = G.G$.extend({}, childReactNode.props, props, this.state.formTagStates[tagName], {
+                        needUpdateToState: ["validation", "invalidType", "rules","data-__field", "data-__meta"]
+                    });
                     delete props.value;
                     let formTag: any = React.createElement(childReactNode.type, props, props.children);
                     let initialValue = this.values[tagName] || childReactNode.props.value;
@@ -241,22 +247,22 @@ export class Form<P extends (typeof props & FormComponentProps), S extends state
      * @param tagName 控件名称
      * @param state 控件state对象
      */
-    public setFormTagState(tagName: string, state: FormTag.state) {
+    public setFormTagState(tagName: string, state: FormTag.state, callback?: ()=>void) {
         let stateClone = G.G$.extend({}, state);
         let formTagStates = this.state.formTagStates;
         formTagStates[tagName] = stateClone;
         this.setState({
             formTagStates
-        });
+        }, callback);
     }
 
     //设置一个form控件的值
-    public setFieldValue(name: string, value: any) {
+    public setFieldValue(name: string, value: any, callback?: Function) {
         this.values[name] = value;
         let params = {};
         params[name] = value;
         this.props.form.setFieldsValue(params);
-        this.validateField(name);
+        this.validateField(name, callback);
     }
 
     //验证一个form控件

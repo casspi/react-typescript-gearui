@@ -24,10 +24,12 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
             return this.props.addonBefore;
         } else {
             let addonBefore: any = this.props.addonBefore;
-            addonBefore = G.$(addonBefore);
-            //需要从document文档中把节点删掉
-            if (addonBefore.remove) {
-                addonBefore.remove();
+            if(addonBefore) {
+                addonBefore = G.$(addonBefore);
+                //需要从document文档中把节点删掉
+                if (addonBefore.remove) {
+                    addonBefore.remove();
+                }
             }
             return addonBefore;
         }
@@ -39,10 +41,12 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
             return this.props.addonAfter;
         } else {
             let addonAfter:any = this.props.addonAfter;
-            addonAfter = G.$(addonAfter);
-            //需要从document文档中把节点删掉
-            if (addonAfter.remove) {
-                addonAfter.remove();
+            if(addonAfter) {
+                addonAfter = G.$(addonAfter);
+                //需要从document文档中把节点删掉
+                if (addonAfter.remove) {
+                    addonAfter.remove();
+                }
             }
             return addonAfter;
         }
@@ -54,9 +58,11 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
             return this.props.prefix;
         } else {
             let prefix: any = this.props.prefix;
-            prefix = G.$(prefix);
-            if (prefix.remove) {
-                prefix.remove();
+            if(prefix) {
+                prefix = G.$(prefix);
+                if (prefix.remove) {
+                    prefix.remove();
+                }
             }
             return prefix;
         }
@@ -108,6 +114,7 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
             let spanProps = {
                 key: UUID.get(),
                 type: this.props.icon,
+                className: "icon",
                 style: {cursor:"pointer"},
                 onClick: (e: any) => {
                     //控件基础改变事件
@@ -121,6 +128,11 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
         // 如果定义了按钮文本或图标，则添加一个按钮
         if(this.props.buttonText || this.props.buttonIcon){
             let button;
+            let size: any  = null;
+            if(this.props.size && this.props.size=="large")
+                size = "large";
+            if(this.props.size && this.props.size=="small")
+                size = "small";  
             let clickButtonEvent = (e: any) => {
                 //控件基础改变事件
                 this.focus(e);
@@ -128,11 +140,11 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
                 this.doEvent("clickButton", e);
             };
             if(this.props.buttonText && this.props.buttonIcon){
-                button = <AntdButton key={UUID.get()} icon={this.props.buttonIcon} onClick={clickButtonEvent}>{this.props.buttonText}</AntdButton>
+                button = <AntdButton key={UUID.get()} size={size} className="button" style={{cursor:"pointer"}} icon={this.props.buttonIcon} onClick={clickButtonEvent}>{this.props.buttonText}</AntdButton>
             }else if(this.props.buttonText){
-                button = <AntdButton key={UUID.get()} onClick={clickButtonEvent}>{this.props.buttonText}</AntdButton>
+                button = <AntdButton key={UUID.get()} size={size} className="button" style={{cursor:"pointer"}} onClick={clickButtonEvent}>{this.props.buttonText}</AntdButton>
             }else if(this.props.buttonIcon){
-                button = <AntdButton key={UUID.get()} icon={this.props.buttonIcon} onClick={clickButtonEvent}/>
+                button = <AntdButton key={UUID.get()} size={size} className="button" style={{cursor:"pointer"}} icon={this.props.buttonIcon} onClick={clickButtonEvent}/>
             }
             controls.push(button);
         }  

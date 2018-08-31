@@ -2,51 +2,65 @@ import * as React from 'react';
 import * as Text from './Text';
 import { AutoComplete as AntdAutoComplete, Input as AntdInput } from 'antd';
 import { InputProps } from "antd/lib/input";
-import { UUID, ObjectUtil } from '../../utils';
+import { ObjectUtil, Http } from '../../utils';
 const AntdOption = AntdAutoComplete.Option;
 const AntdOptGroup = AntdAutoComplete.OptGroup;
 const AntdTextArea = AntdInput.TextArea;
 export var props = {
     ...Text.props,
-    controlType: GearType.String,
+    controlType: GearType.String,//是input还是textarea
     //是否严格匹配
     mustMatch: GearType.Boolean,
     // 行数
     rows: GearType.Number,
     dicType: GearType.Or(GearType.String, GearType.Object),
     limit: GearType.Number,
-    onMatchFormat: GearType.Function
+    onMatchFormat: GearType.Function,
+    category: GearType.Boolean,
+    popupContainer: GearType.String,
+    async: GearType.Boolean,
+    dictype: GearType.Or(GearType.Object, GearType.Function, GearType.String),
+    url: GearType.Or(GearType.String, GearType.Function)
 }
 export interface state extends Text.state {
     controlType?: string;
     mustMatch?: boolean;
     options?: Array<OptionData>;
     rows?: number;
-    text?: string;
     limit?: number;
+    category?: boolean;
+    searchOptions?: Array<OptionData>;
+    dictype?: object | string | Function,
+    url?: string | Function
 }
 interface OptionData {
     value?: string;
     text?: string;
     children?: Array<OptionData>;
     attribute?: any;
+    parent?: OptionData;
+    disabled?: boolean;
+    pinyin?: string;
+    shortPinyin?: string;
 }
 export default class AutoComplete<P extends typeof props & InputProps, S extends state & InputProps> extends Text.default<P, S> {
-
-    private _selectedData: Array<string> | null;
-
-    // 数据集
-    private _options: Array<any> | null;
 
     getInitialState(): state {
         return {
             mustMatch: this.props.mustMatch,
             rows: this.props.rows,
             options: [],
+            searchOptions: [],
             controlType: this.props.controlType,
-            text: this.props.value,
-            limit: this.props.limit
+            limit: this.props.limit || 10,
+            category: this.props.category == true,
+            dictype: this.props.dictype,
+            url: this.props.url
         };
+    }
+
+    getSuperInitState() {
+        return super.getInitialState;
     }
 
     getTextareaProps() {
@@ -74,48 +88,44 @@ export default class AutoComplete<P extends typeof props & InputProps, S extends
         // 取消父对象Text中对value属性的设置
         delete state.value;
         delete state.ref;
+        delete state.mustMatch;
+        delete state.searchOptions;
+        delete state.controlType;
+        delete state.category;
+        delete state.validation;
+        delete state.invalidType;
+        delete state.options;
         return G.G$.extend({}, state, {
             onFocus: (e: any) => {
-                // 获得焦点时，如果options为空，则加载一次
-                if(state.mustMatch == true && !state.options){
+                // 获得焦点时，如果searchOptions为空，则加载一次
+                if(this.state.mustMatch == true && (!this.state.searchOptions || this.state.searchOptions.length == 0)) {
                     // 重新加载数据
-                    this.loadData(value);
+                    this.search(value);
                 }              
             },
             onBlur: (e: any) => {
-                if(state.mustMatch == true){
+                if(this.state.mustMatch == true){
                     // 当文本框失去焦点时，检查文本框中的值是否在选项内
-                    let options = state.options;
+                    let options = this.state.options;
                     let matched: boolean = false;
                     if(options && options.length > 0){
                         // 如果当前选项不为空，说明有能够匹配的，但是要检查当前输入值是否能完全匹配的上
                         // 当前填写值
                         let value = this.getText();
-                        if(options.length == 1){
-                            // 如果可选条件仅剩一个，检查当前选中值与可选项中是否相等，如果不等触发select
-                            let option = options[0];
-                            if((option.props.value && option.props.value == value) || option.props.text == value){
-                                // 相等
-                                this._change(option.props.value, option.props.text);    
-                                matched = true;                        
-                            }
-                        }else{
-                            // 如果可选条件还有好几个，检查当前选中值是否包含在其中，如果包含则不用做什么
-                            for (let i = 0; i < options.length; i++) {
-                                let option = options[i];
-                                if ((option.props.value && option.props.value == value) || option.props.text == value) {
-                                    this.setState({ options: [option] });
-                                    this._change(option.props.value, option.props.text);
-                                    matched = true;
-                                    break;
-                                }
+                        for (let i = 0; i < options.length; i++) {
+                            let option = options[i];
+                            if ((option.value && option.value == value) || option.text == value) {
+                                this.setState({ searchOptions: [option] });
+                                this._change(option.value || option.text);
+                                matched = true;
+                                break;
                             }
                         }
                     }
-                    if(matched==false){
+                    if(matched == false){
                         // 如果当前选项为空，说明没有任何能匹配上的
-                        this._change("","");
-                        this.setState({"options":null});
+                        this._change("");
+                        this.setState({searchOptions: []});
                     }
                 }        
                 //执行自定义注册的事件
@@ -124,67 +134,153 @@ export default class AutoComplete<P extends typeof props & InputProps, S extends
         });
     }
 
-    private getOptions() {
-
+    /**
+     * 获取所有的option选项
+     */
+    private getOptionJsxs() {
+        let options = this.state.searchOptions;
+        let optionsJsx: React.ReactElement<any>[] = [];
+        if(options) {
+            let limit = 0;
+            options.forEach(option => {
+                if(limit <= this.state.limit) {
+                    let optionJsxAndLimit = this.getOptionJsx(option, limit);
+                    if(optionJsxAndLimit && optionJsxAndLimit.limit <= this.state.limit) {
+                        if(optionJsxAndLimit.optionJsx) {
+                            optionsJsx.push(optionJsxAndLimit.optionJsx);
+                            limit = optionJsxAndLimit.limit;
+                        }
+                    }
+                }
+            });
+        }
+        return optionsJsx;
     }
 
-    getAutoCompleteProps() {
+    /**
+     * 获取单个option选项
+     * @param option 
+     */
+    private getOptionJsx(option: OptionData, limit: number): {optionJsx?: React.ReactElement<any>, limit: number} | undefined {
+        let value = option.value || option.text;
+        let text  = option.text;
+        let children = option.children;
+        let optionJsx: React.ReactElement<any>|undefined = undefined;
+        let thisValue = this.getValue();
+        if(limit < this.state.limit) {
+            if(children && children.length > 0 && this.state.category == true) {
+                //组的情况下AntdOptGroup也算一个节点，所以limit要先加
+                limit ++;
+                let childrenJsx: React.ReactElement<any>[] = [];
+                children.forEach(optionChild => {
+                    optionChild.parent = option;
+                    let optionJsxAndLimit = this.getOptionJsx(optionChild, limit);
+                    if(optionJsxAndLimit != undefined) {
+                        if(optionJsxAndLimit.optionJsx) {
+                            childrenJsx.push(optionJsxAndLimit.optionJsx);
+                        }
+                        limit = optionJsxAndLimit.limit;
+                    }
+                });
+                if(thisValue == value || thisValue == text || !thisValue || thisValue == '' || childrenJsx.length > 0) {
+                    optionJsx = <AntdOptGroup key={text} label={text}>{childrenJsx}</AntdOptGroup>;
+                }
+            }else {
+                let props = {
+                    key: text,
+                    value: value,
+                    text: text,
+                    disabled: option.disabled == true,
+                    attributes: option.attribute
+                };
+                //通过自定义格式化输出
+                if(this.haveEvent("matchFormat")) {
+                    let r = this.doEvent("matchFormat", option);
+                    if(r && r[0]) {
+                        optionJsx = <AntdOption {...props}>{G.$(r[0])}</AntdOption>;
+                    }
+                }else {
+                    optionJsx = <AntdOption {...props}>{text}</AntdOption>;
+                }
+                limit ++;
+            }
+            return {optionJsx, limit};
+        }
+        return undefined;
+    }
+
+    /**
+     * 获取指定节点数据
+     * @param value 
+     * @param optionsParam 
+     */
+    public getOption(value: any, optionsParam?: OptionData[]): OptionData | null {
+        let options = optionsParam || this.state.options;
+        if(options) {
+            for(let i = 0; i < options.length; i++) {
+                let option = options[i];
+                if(option.value == value || option.text == value) {
+                    return option;
+                }else {
+                    if(option.children && option.children.length > 0 && this.state.category) {
+                        let optionInner = this.getOption(value, option.children);
+                        if(optionInner) {
+                            return optionInner;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    //当选中值时触发
+    protected _select(value: any,option: any){
+        //执行自定义注册的事件
+        this.doEvent("select", value, option);
+        this.match(value);
+    }
+
+    getAutoCompleteProps(): any {
         return {
             allowClear : false,
             className : "autocomplete-control" + (this.state.className ? " " + this.state.className : ""),
-            style : { width: this.state.style ? this.state.style.width : null,height: this.state.style ? this.state.style.height : null},
+            style: { width: this.state.style ? this.state.style.width : null,height: this.state.style ? this.state.style.height : null},
             size: this.state.size,
-            dataSource : this.state.options,
+            dataSource : this.getOptionJsxs(),
             optionLabelProp : "text",
             onChange : (value: any) => {
                 if(this.state.mustMatch == true){
-                    let v: any = "";
-                    let t = value;
-                    if(this._selectedData){
-                        // 如果是选中的，根据选中的值赋值
-                        v = this._selectedData[0];
-                        t = this._selectedData[1];
-                        this._selectedData = null;
-                    }else{
-                        // 如果是输入的，在输入中value都无值，因为未确定选项
-                        v = null;
-                    }
                     // 判断如果当前值和之前值不同，则触发change事件
-                    if(ObjectUtil.isValueEqual(v, this.getValue())){
-                        this.setValue(v,t);
+                    if(ObjectUtil.isValueEqual(value, this.getValue())){
+                        this.setValue(value);
                     }else{
-                        this._change(v,t);
+                        this._change(value);
                     }
                 }else{
-                    if(this._selectedData){
-                        let text = this._selectedData[1];
-                        this._selectedData = null;
-                        this._change(text,text);   
-                    }else{
-                        this._change(value,value);   
-                    }
+                    this._change(value);
                 }            
             },
             onSearch : (value: any) => {
                 // 如果是异步查询，需要在每次输入内容变更时重新去后台获取数据
-                this.loadData(value);
+                this.search(value);
             },
             onSelect : (value: any,option: any) => {
-                this._select(value,option);
+                this._select(value, option);
             },
-            defaultValue : this.state["text"],
-            value : this.state["text"],
+            defaultValue : this.state.value,
+            value : this.state.value,
             getPopupContainer: ()=>{
                 let container:any = document.body;
-                if(this.props.popupcontainer) {
-                    if("parent"==this.props.popupcontainer){
+                if(this.props.popupContainer) {
+                    if("parent" == this.props.popupContainer){
                         // 在其父级
                         if(this.realDom != null) {
                             container = this.realDom;
                         }
                     }else{
                         // 在自定义的选择器内，如果自定义的选择器无效，则生成在document.body下
-                        let c = G.G$(this.props.popupcontainer);
+                        let c = G.G$(this.props.popupContainer);
                         if(c.length>0)
                             container = c[0];
                     }
@@ -194,112 +290,91 @@ export default class AutoComplete<P extends typeof props & InputProps, S extends
         };
     }
 
-    private loadData(value?: any, callback?:Function){
+    private search(value?: any, callback?: () => void) {
         if(this.haveEvent("search")){
             let options = this.doEvent("search", value);
             // 如果onsearch有返回值，则以onsearch返回的值作为选项集
-            this._options = options;
-            this.setDefaultOptions(null, callback);
+            this.setState({
+                options: options ? options[0] : [],
+                searchOptions: options ? options[0] : [],
+            }, callback);
             return;
         }
-        if(this._async==true || (this._async==false && this._inited==false)){
-            let url = this.state["url"];
-            let dictype = this.props.dictype;
-            if(url==null && dictype){
-                url = Util.getRootPath()+"/dictionary/query?type="+dictype;
-            }         
-            if(url){
-                let __this = this;
-                let __limit = this._limit;
-                let options;
-                // 如果不是异步查询，则设置查询上线为0，表示返回所有记录
-                if(this._async==false)
-                    __limit = 0;
-                
-                if(this._async==false && dictype && window[dictype+"_matcher"]){
-                    // 如果页面上本身就有数据集，则不需要异步载入
-                    options = window[dictype+"_matcher"];
-                }else{
-                    Ajax.get(url,{q:q,limit:__limit},false).done(function(message){
+        if(this.props.async) {
+            this.loadData(value, callback);
+        }else {
+            this.match(value, callback);  
+        }
+    }
+
+    private match(value?: any, callback?: () => void) {
+        // 非异步方式的，如果已经初始化过了，则进行前端匹配
+        let options = this.state.options;
+        // 如果是在本地比较，则需进行前端的数据匹配
+        if(options){
+            let searchOptions = [];
+            for(let i = 0;i < options.length; i++){
+                let option = options[i];
+                if((option.value && option.value.indexOf(value)!=-1) 
+                        || (option.text && option.text.indexOf(value)!=-1)
+                        || (option.pinyin && option.pinyin.indexOf(value)!=-1)
+                        || (option.shortPinyin && option.shortPinyin.indexOf(value)!=-1)){
+                    searchOptions.push(option);
+                }
+            }
+            this.setState({
+                searchOptions
+            },callback);
+        }   
+    }
+
+    private loadData(value?: any, callback?: () => void) {
+        let url = this.state.url;
+        let dictype = this.state.dictype;
+        if(url == null && dictype && typeof dictype == 'string'){
+            url = Http.getRootPath() + "/dictionary/query?type=" + dictype;
+        }
+        if(url){
+            let options: any[];
+            if(this.props.async == false && dictype && window[dictype+"_matcher"]){
+                // 如果页面上本身就有数据集，则不需要异步载入
+                options = window[dictype+"_matcher"];
+                this.setState({
+                    options: options,
+                    searchOptions: options
+                }, callback);
+            }else{
+                let fn = async ()=> {
+                    // 如果不是异步查询，则设置查询上线为0，表示返回所有记录
+                    let result = await Http.ajax("get", url, {q: value,limit: this.props.async == false ? 0 : this.state.limit});
+                    if(result.success) {
+                        let message = result.data;
                         if(message && message.data && typeof message.data == "object"){
-                            options = message.data.map((ele,index) => {
+                            options = message.data.map((ele: any,index: any) => {
                                 if(!ele["text"])
                                     ele["text"] = ele["label"];
                                 delete ele["label"];
                                 return ele;
-                            })
+                            });
                         }
-                    }).fail(function(err){
-                        console.error(err);
-                    });
-                }
-                __this._inited = true;
-                __this._options = options;
-                if(this._async==true)
-                    __this.setDefaultOptions(null,callback);
-                else
-                    // 由于非异步查询是一次性载入数据，因此这里要根据初始的默认值做一次过滤
-                    __this.setDefaultOptions(__this.getValue(),callback);       
-            }     
-        }else if(this._async==false && this._inited==true){
-            // 非异步方式的，如果已经初始化过了，则进行前端匹配
-            this._matched = 0;
-            // 如果是在本地比较，则需进行前端的数据匹配
-            if(this._options){
-                let options = [];
-                for(let i=0;i<this._options.length;i++){
-                    let option = this._options[i];
-                    if((option["value"] && option["value"].indexOf(q)!=-1) 
-                            || (option["text"] && option["text"].indexOf(q)!=-1)
-                            || (option["pinyin"] && option["pinyin"].indexOf(q)!=-1)
-                            || (option["shortPinyin"] && option["shortPinyin"].indexOf(q)!=-1)){
-                        this._matched++;
-                        options.push(this._doMatchFormat(option));
-                    }
-                    if(this._matched>=this._limit){
-                        break;
+                        this.setState({
+                            options: options,
+                            searchOptions: options
+                        }, callback);
+                    }else {
+                        this.doEvent("error", result);
                     }
                 }
-                this.setState({
-                    options:options
-                },()=>{
-                    if(callback)
-                        callback.call(this);
-                });
-            }           
-        }  
-    }
-
-    // 根据自定义函数返回的格式对显示内容进行格式化
-    private _doMatchFormat(option: any){
-        let props = {
-            key : option.value || UUID.get(),
-            value : option.value || option.text,
-            text : option.text,
-            attributes: option.attributes
-        }        
-        if(this.haveEvent("matchFormat")){
-            return <AntdOption {...props}>{G.$(this.doEvent("matchFormat", option))}</AntdOption>;
-        }else{
-            return <AntdOption {...props}>{option.text}</AntdOption>;
-        }
+                fn();
+            }
+        }    
     }
 
     // 设置初始时的默认Options
-    private setDefaultOptions(value?: any, callback?: Function) {
-        let options = this._options;
-        let newOptions = [];
-        for (var i = 0; options && i < options.length && newOptions.length < this.state.limit; i++) {
-            let option = options[i];
-
-            if (value && value.length > 0) {
-                if (option.value == value || option.text == value)
-                    newOptions.push(this._doMatchFormat(option));
-            } else
-                newOptions.push(this._doMatchFormat(option));
-        }
+    private setDefaultOptions(callback?: Function) {
+        let options = this.state.options;
         this.setState({
-            options: newOptions
+            searchOptions: options
         }, () => {
             if (callback)
                 callback.call(this);
@@ -307,34 +382,47 @@ export default class AutoComplete<P extends typeof props & InputProps, S extends
     }
 
     //改变事件
-    protected _change(value: any,text?: any) {
+    protected _change(value: any) {
         value = value || "";
         let oldValue = this.getValue();
         if(oldValue != value){
-            this.setValue(value, text, () => {
+            this.setValue(value, () => {
                 let args = [value , oldValue];
                 //执行自定义注册的事件
                 this.doEvent("change", ...args);
-                this._selectedData = null;
             });
         }else{
-            this.setValue(value, text);
+            this.setValue(value);
         }
     }
     
-    setValue(value: any, text?:any, callback?: Function) {
-        if(this.props.form) {
-            this.triggerChange(value, callback);
-        }else {
-            this.setState({
-                value,
-                text
-            }, () => {
-                if(callback) {
-                    callback();
+    afterRender() {
+        let callback = ()=>{
+            // 加载完成后触发
+            if(ObjectUtil.isEmpty(this.props.value) == false){
+                if(this.state.mustMatch == true){
+                    // 如果是必须匹配，检查当前options中的记录数量，如果为0表示默认值没有命中任何数据，应清空
+                    let options = this.state.options;
+                    if(options && options.length==1){
+                        let option = options[0];
+                        this.setValue(option.value);
+                    }else{
+                        if(ObjectUtil.isEmpty(this.getValue())) {
+                            this.clear();
+                        }                  
+                    }
+                }else{
+                    this.reset();
                 }
-            });
-        }
+                this.match(this.props.value);
+            }
+        };
+        if(this.props.async == true)
+            // 异步查询根据默认值加载数据
+            this.loadData(this.getValue(), callback);
+        else
+            // 非异步查询第一次时载入所有数据放到内存，以后根据内存中数据进行过滤
+            this.loadData(null, callback);
     }
 
     render() {
@@ -344,11 +432,64 @@ export default class AutoComplete<P extends typeof props & InputProps, S extends
         }else {
             input= <AntdInput {...this.getInputProps()}></AntdInput>;
         }
-        return <div></div>;
+        let acprops = this.getAutoCompleteProps();    
+        if(this.state.mustMatch == true){
+            let hiddenProps = {
+                key: this.getKey(),
+                type: "hidden",
+                value: this.state.value || "",
+                name: this.state.name
+            };
+            return <span><AntdAutoComplete {...acprops}>{input}</AntdAutoComplete><input {...hiddenProps}/></span>;
+        }else {
+            return <AntdAutoComplete {...acprops}>{input}</AntdAutoComplete>;
+        }
+             
+    }
+
+    // setValue(value: any, text?:any, callback?: Function) {
+    //     if(this.props.form) {
+    //         this.triggerChange(value);
+    //     }else {
+    //         this.setState({
+    //             value,
+    //             // text
+    //         }, () => {
+    //             if(callback) {
+    //                 callback();
+    //             }
+    //         });
+    //     }
+        
+    // }
+
+    reset(){
+        super.reset();
+        this.setState({
+            value:this.props.value || "",
+            // text:this.props.value || "",
+        },()=>{
+            this.loadData();
+        });
+    }
+
+    clear(){
+        this.setValue("");
+        this.setDefaultOptions();
     }
 
     getText() {
-        return this.state.text;
+        // return this.state.text;
+        let option = this.getOption(this.state.value);
+        return option ? option.text : "";
     }
+
+    focus(...args: any[]) { 
+        this.find("input").focus(...args);      
+    }
+
+    blur(...args: any[]){
+        this.find("input").blur(...args);
+    }    
 
 }

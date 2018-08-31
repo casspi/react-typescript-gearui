@@ -36,7 +36,7 @@ export var props = {
 
     readOnly: GearType.Boolean,
     
-    rules: GearType.Array,
+    rules: GearType.Array<any>(),
     value: GearType.String,
     ...Validate.props,
     ...Tag.props
@@ -54,20 +54,16 @@ export default abstract class FormTag<P extends typeof props, S extends state> e
 
     protected cannotUpdate:GearArray<keyof S> = new GearArray<keyof state>(["name","id"]);
 
-    protected afterReceiveProps(nextProps: P) {
-        // if ('value' in nextProps) {
-        //     this.setState({
-        //         value: nextProps.value
-        //     });
-        // }
+    protected afterReceiveProps(nextProps: P): Partial<typeof props> {
+        return {
+            value: nextProps.value,
+            onChange: nextProps.onChange
+        };
     }
 
     triggerChange(changedValue: any, callback?: Function) {
         if(this.props.form) {
-            this.props.form.setFieldValue(this.props.name, changedValue);
-            if(callback) {
-                callback();
-            }
+            this.props.form.setFieldValue(this.props.name, changedValue, callback);
         }
     }
 
@@ -199,5 +195,4 @@ export default abstract class FormTag<P extends typeof props, S extends state> e
             return false;
     }
     
-
 }

@@ -230,7 +230,7 @@ export default class GearUtil {
     private static isGearType(valueInPropsTemplete: any) {
         for(let key in GearType) {
             if(GearType[key] instanceof Function) {
-                if(valueInPropsTemplete.indexOf(GearType[key]()) != -1) {
+                if(typeof valueInPropsTemplete == "string" && valueInPropsTemplete.indexOf(GearType[key]()) != -1) {
                     return true;
                 }
             }else if(GearType[key].indexOf(valueInPropsTemplete) != -1) {
@@ -335,19 +335,30 @@ export default class GearUtil {
             let funs = [];
             for(let i = 0; i < values.length; i++) {
                 let valueInner = values[i];
-                let methodName = valueInner.replace(/\([\.|$|\w]{0,}\);?/,"");
-                if(G.cannotSetStateEvents.contains(name)) {
-                    GearUtil.removeSetStateFromCannotSetStateFunction(methodName, name);
-                }
-                let script = methodName + ".bind(this)(...arguments)";
-                // 如果该属性名称在常用事件名称列表中，这里按照事件的规则处理
-                funs.push(function(...args: any[]){
-                    try{
-                        return eval(script);
-                    }catch(err){
-                        console.error(err);
+                if(typeConstractor == "script") {
+                    valueInner = valueInner.replace(/^javascript:/,"");
+                    return function(...args: any[]){
+                        try{
+                            return eval(valueInner);
+                        }catch(err){
+                            console.error(err);
+                        }
                     }
-                });
+                }else {
+                    let methodName = valueInner.replace(/\([\.|$|\w]{0,}\);?/,"");
+                    if(G.cannotSetStateEvents.contains(name)) {
+                        GearUtil.removeSetStateFromCannotSetStateFunction(methodName, name);
+                    }
+                    let script = methodName + ".bind(this)(...arguments)";
+                    // 如果该属性名称在常用事件名称列表中，这里按照事件的规则处理
+                    funs.push(function(...args: any[]){
+                        try{
+                            return eval(script);
+                        }catch(err){
+                            console.error(err);
+                        }
+                    });
+                }
             }
             if(funs.length == 1) {
                 return funs[0];
@@ -371,6 +382,15 @@ export default class GearUtil {
                         return funs[0];
                     }
                     return funs;
+                }else if(type == "script") {
+                    let script = value.replace(/^javascript:/,"");
+                    return function(...args: any[]){
+                        try{
+                            return eval(script);
+                        }catch(err){
+                            console.error(err);
+                        }
+                    }
                 }else if(type == 'boolean') {
                     if(value == "true") {
                         return true;
@@ -421,6 +441,9 @@ export default class GearUtil {
                 let match = value.match(methodReg);
                 if(match && window[match[0].replace(/\([\.|$|\w]{0,}\);?/,"")]) {
                     type = "function";
+                }else if(G.events.contains(name) && /^javascript:.+/.test(value)){
+                    // 如果以javascript开头，则认为是脚本
+                    type = "script";
                 }else {
                     if(/^\{[\s\S]+\}$/.test(value) || /^\[[\s\S]+\]$/.test(value)) {
                         try {

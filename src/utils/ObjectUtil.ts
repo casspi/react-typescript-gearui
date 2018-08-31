@@ -315,12 +315,19 @@ export default class ObjectUtil {
 
     static isExtends(clazz: any, parent: string):boolean {
         if(clazz && clazz.toString()) {
-            let clazzStr = clazz.toString();
-            let clazzRegExp = new RegExp("function[ ]{1,}" + parent + "[ ]?\\(");
-            if(clazzRegExp.test(clazzStr)) {
+            if(ObjectUtil.isInstance(clazz, parent)) {
                 return true;
             }
             return ObjectUtil.isExtends(clazz.__proto__, parent);
+        }
+        return false;
+    }
+
+    static isInstance(clazz: any, name: string) {
+        let clazzStr = clazz.toString();
+        let clazzRegExp = new RegExp("function[ ]{1,}" + name + "[ ]?\\(");
+        if(clazzRegExp.test(clazzStr)) {
+            return true;
         }
         return false;
     }
@@ -367,6 +374,27 @@ export default class ObjectUtil {
         if(str!=null && typeof str=="boolean")
             return str;
         return (str!=null && str=="true");
+    }
+
+    // 是否为空对象
+    static isEmpty(e: any){
+        if(e){
+            if(e instanceof Array)
+                if(e.length==0)
+                    return true;
+                else
+                    return false;
+            else if(typeof e == "string")
+                if((e+"").length==0)
+                    return true;
+                else
+                    return false;
+            else if(typeof e == "object")
+                return this.isEmptyObject(e);
+            else
+                return false;
+        }else
+            return true;
     }
 
     /**

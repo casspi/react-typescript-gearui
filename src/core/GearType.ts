@@ -4,7 +4,9 @@ export var GearType = {
     Number: "_g_number",
     Object: "_g_object",
     Function: "_g_function",
-    Array: "_g_array",
+    Array: () => {
+        return "_g_array";
+    },
     Undefined: "_g_undefined",
     Null: "_g_null",
     RegExp: "_g_RegExp",
