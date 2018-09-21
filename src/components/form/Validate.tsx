@@ -26,8 +26,4 @@ export default abstract class Validate<P extends typeof props, S extends (state)
         return <span data-geartype="validate"></span>;
     }
 
-    afterReceiveProps(nextProps: P) {
-
-    }
-
 }

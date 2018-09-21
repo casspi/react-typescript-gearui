@@ -163,22 +163,22 @@ export class Form<P extends (typeof props & FormComponentProps), S extends state
                         validateStatus={validateStatus}
                         help={help}
                         key={this.props.id + "_form_item_" + index}
-                        label={props.label} 
+                        label={props.labelText} 
                     >{ele}</AntdForm.Item>;
                 }else {
                     let ele = Tooltip.addInvalidTooltip(formTag,tagName,help,this.getFormTagState(tagName).titleAlign||props.titleAlign);
                     return <AntdForm.Item required key={this.props.id + "_form_item_" + index} className={"ant-form-item-with-float-help"}
                         validateStatus={validateStatus}
-                        label={props.label} 
+                        label={props.labelText} 
                         help={""}
                     >{ele}</AntdForm.Item>;
                 }
             }else {
                 let ele = Tooltip.addTooltip(formTag,this.getFormTagState(tagName).title||props.title,this.getFormTagState(tagName).titleAlign||props.titleAlign);
                 if(invalidType == "fixed") {
-                    return <AntdForm.Item label={props.label} key={this.props.id + "_form_item_" + index}>{ele}</AntdForm.Item>;
+                    return <AntdForm.Item label={props.labelText} key={this.props.id + "_form_item_" + index}>{ele}</AntdForm.Item>;
                 }else{
-                    return <AntdForm.Item label={props.label} key={this.props.id + "_form_item_" + index} className={"ant-form-item-with-float-help"}>{ele}</AntdForm.Item>;
+                    return <AntdForm.Item label={props.labelText} key={this.props.id + "_form_item_" + index} className={"ant-form-item-with-float-help"}>{ele}</AntdForm.Item>;
                 }
             }
         }

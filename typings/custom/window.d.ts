@@ -12,6 +12,8 @@ interface GearJson<T> {
     forEach(callback:((key:string,value:T) => void)):void;
 
     clear():void;
+
+    new<T>(): GearJson<T>;
 }
 
 declare var GearJson: GearJson<any>;

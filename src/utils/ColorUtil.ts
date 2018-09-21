@@ -18,4 +18,17 @@ export default class ColorUtil {
         this.colorIndex += 1;
         return color;
     };
+    //格式化颜色代码
+    public static getValidColor(value: any) {
+        if(value) {
+            if(value.length > 6) {
+                value = value.substring(0,6);
+            }else if(value.length != 3){
+                let zeroLength = 6 - value.length;
+                let zero = "000000".substr(0,zeroLength);
+                value = value + zero;
+            }
+        }
+        return value;
+    }
 }

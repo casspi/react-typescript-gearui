@@ -435,4 +435,22 @@ export default class Http {
         return p;
     }
 
+    /**
+     * 为url添加参数
+     * @param url 路径 
+     * @param param 参数
+     */
+    static appendUrlParam(url: any,param: any) {
+        if(url != null && url != "") {
+            for(let key in param) {
+                if(url.indexOf("?") != -1) {
+                    url += "&" + key + "=" + param[key];
+                }else {
+                    url += "?" + key + "=" + param[key];
+                }
+            }
+        }
+        return url;
+    }
+
 }

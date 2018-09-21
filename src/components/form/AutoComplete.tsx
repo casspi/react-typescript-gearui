@@ -13,7 +13,6 @@ export var props = {
     mustMatch: GearType.Boolean,
     // 行数
     rows: GearType.Number,
-    dicType: GearType.Or(GearType.String, GearType.Object),
     limit: GearType.Number,
     onMatchFormat: GearType.Function,
     category: GearType.Boolean,

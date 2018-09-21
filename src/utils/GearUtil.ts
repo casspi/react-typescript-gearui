@@ -460,4 +460,27 @@ export default class GearUtil {
         return type;
     }
 
+    // 按规则将其转换为控件实际可接受的属性
+    static toProps(options: any){
+        let props = {};
+        if(options){
+            for(let key in options){
+                let value = options[key];
+                if("class"==key.toLowerCase()){
+                    props["className"] = value;
+                }else if("invalidmessage"==key.toLowerCase()){
+                    props["invalidMessage"] = value;
+                }else if("events"==key.toLowerCase()){
+                    props["events"] = value;
+                }else{
+                    props[key.toLowerCase()] = value;
+                }
+            }
+        }
+        if(!props["id"]){
+            props["id"] = UUID.get();
+        }
+        return props;
+    }
+
 }

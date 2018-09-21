@@ -13,6 +13,8 @@ let events = {
     onAfterupdate: GearType.Function,
     onBeforeCancel: GearType.Function,
     onBeforeCheck: GearType.Function,
+    onBeforeCollapse: GearType.Function,
+    onBeforeExpand: GearType.Function,
     onBeforeLoad: GearType.Function,
     onBeforePrint: GearType.Function,
     onBeforeProcess: GearType.Function,
@@ -26,10 +28,12 @@ let events = {
     onCanplayThrough: GearType.Function,
     onChange: GearType.Function,
     onCheck: GearType.Function,
+    onClear: GearType.Function,
     onClick: GearType.Function,
     onClickButton: GearType.Function,
     onClickIcon: GearType.Function,
     onClose: GearType.Function,
+    onCollapse: GearType.Function,
     onCompassNeedScalibration: GearType.Function,
     onComplete: GearType.Function,
     onConfirm: GearType.Function,
@@ -147,6 +151,7 @@ let events = {
     onSubmitSuccess: GearType.Function,
     onSuccess: GearType.Function,
     onSuspend: GearType.Function,
+    onTabChange: GearType.Function,
     onTimeUpdate: GearType.Function,
     onTouchCancel: GearType.Function,
     onTouchEnd: GearType.Function,
@@ -174,8 +179,8 @@ Object.defineProperty(events, "keys", {
 Object.defineProperty(events, "cannotSetState", {
     get: function() {
         return new GearArray([
-            "onafterrender",
-            "onafterupdate"
+            "onAfterRender",
+            "onAfterUpdate"
         ]);
     },
     enumerable: false

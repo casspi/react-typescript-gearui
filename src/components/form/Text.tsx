@@ -190,6 +190,10 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
         };
     }
 
+    protected getProps() {
+        return this.state;
+    }
+
     afterRender() {
         let style = this.state.style;
         if(style != null && G.G$.isEmptyObject(style) == false) {
@@ -205,7 +209,7 @@ export default class Text<P extends typeof props & InputProps, S extends (state 
     }
 
     render() {
-        return <AntdInput {...this.state}></AntdInput>;
+        return <AntdInput {...this.getProps()}></AntdInput>;
     }
     
     blur(fun: Function){

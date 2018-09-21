@@ -427,16 +427,24 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
         return jdom.mouseup.call(jdom,...args);
     }
     next(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.next.call(jdom,...args);
+        let jdom = G.G$(this.realDom).next(...args);
+        return G.$(jdom[0]);
     }
     nextAll(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.nextAll.call(jdom,...args);
+        let jdom = G.G$(this.realDom).nextAll(...args);
+        let nexts: any[] = [];
+        jdom.each((index, ele) => {
+            nexts.push(G.$(ele));
+        });
+        return nexts;
     }
     nextUntil(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.nextUntil.call(jdom,...args);
+        let jdom = G.G$(this.realDom).nextUntil(...args);
+        let nexts: any[] = [];
+        jdom.each((index, ele) => {
+            nexts.push(G.$(ele));
+        });
+        return nexts;
     }
     not(...args:any[]){
         let jdom = G.G$(this.realDom);
@@ -471,16 +479,25 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
         return jdom.outerWidth.call(jdom,...args);
     }
     parent(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.parent.call(jdom,...args);
+        let jdom = G.G$(this.realDom).parent(...args);
+        // return jdom.parent.call(jdom,...args);
+        return G.$(jdom[0]);
     }
     parents(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.parents.call(jdom,...args);
+        let jdom = G.G$(this.realDom).parents(...args);
+        let parents: any[] = [];
+        jdom.each((index, ele) => {
+            parents.push(G.$(ele));
+        });
+        return parents;
     }
     parentsUntil(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.parentsUntil.call(jdom,...args);
+        let jdom = G.G$(this.realDom).parentsUntil(...args);
+        let parents: any[] = [];
+        jdom.each((index, ele) => {
+            parents.push(G.$(ele));
+        });
+        return parents;
     }
     position(...args:any[]){
         let jdom = G.G$(this.realDom);
@@ -495,16 +512,24 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
         return jdom.prependTo.call(jdom,...args);
     }
     prev(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.prev.call(jdom,...args);
+        let jdom = G.G$(this.realDom).prev(...args);
+        return G.$(jdom[0]);
     }
     prevAll(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.prevAll.call(jdom,...args);
+        let jdom = G.G$(this.realDom).prevAll(...args);
+        let prevs: any[] = [];
+        jdom.each((index, ele) => {
+            prevs.push(G.$(ele));
+        });
+        return prevs;
     }
     prevUntil(...args:any[]){
-        let jdom = G.G$(this.realDom);
-        return jdom.prevUntil.call(jdom,...args);
+        let jdom = G.G$(this.realDom).prevAll(...args);
+        let prevs: any[] = [];
+        jdom.each((index, ele) => {
+            prevs.push(G.$(ele));
+        });
+        return prevs;
     }
     promise(...args:any[]){
         let jdom = G.G$(this.realDom);
@@ -843,7 +868,23 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
                             this["_" + key] = v;
                         }
                     });
-                    
+                }else if(typeof vInState == "string" && vInState.indexOf(",") != -1 && propsTemplete[key] && propsTemplete[key] != Constants.TYPE.String) {
+                    Object.defineProperty(state, key, {
+                        get: function() {
+                            if(this["_" + key]) {
+                                return this["_" + key];
+                            }
+                            if(propsTemplete[key].indexOf(Constants.TYPE.Array) != -1) {
+                                this["_" + key] = vInState.split(",");
+                            }else {
+                                this["_" + key] = vInState;
+                            }
+                            return this["_" + key];
+                        },
+                        set: function(v) {
+                            this["_" + key] = v;
+                        }
+                    });
                 }
             }
         }

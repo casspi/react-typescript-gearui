@@ -42,12 +42,28 @@
           <a href="www.baidu.com">百度</a>
         </g-breadcrumb-item>
       </g-breadcrumb> -->
-      <g-buttongroup>
-        <g-button buttonstyle="primary">aa</g-button>
-        <g-button buttonstyle="primary">bb</g-button>
-      </g-buttongroup>
       <!-- <g-ajaxaction buttonstyle="primary" url="getUrl()" method="delete"></g-ajaxaction>
       <g-group name="aaa"></g-group> -->
+      <!-- <g-row id="aaa">
+        <g-col span="12" id="bbb">
+          <g-buttongroup>
+            <g-button buttonstyle="primary">aa</g-button>
+            <g-button buttonstyle="primary">bb</g-button>
+          </g-buttongroup>
+        </g-col>
+        <g-col span="12" id="bbb">
+          <g-buttongroup>
+            <g-button buttonstyle="primary">aa</g-button>
+            <g-button buttonstyle="primary">bb</g-button>
+          </g-buttongroup>
+        </g-col>
+      </g-row> -->
+      <!-- <g-tree url="getUrl()" checkbox="true" cascadeCheck="false" lines="true" onlyLeafCheck="true">
+
+      </g-tree> -->
+      <g-combotree name="c31" label="URL" url="getUrl()" width="300" multiple="true" prompt="请选择">
+
+      </g-combotree>
     </div>
     <!--
       This HTML file is a template.
@@ -64,7 +80,10 @@
 
     function getUrl() {
       // return "http://localhost:8080/web/example/Ajaxaction/example1";
-      return "http://localhost:8080/web/example/Autocomplete/data";
+      // return "http://localhost:8080/web/example/Autocomplete/data";
+      let root = "http://localhost:8080/web";
+      // return root + "/example/Tree/data";
+      return root + "/example/Combotree/data";
     }
     function testOnAfterUpdate() {
       

@@ -30,6 +30,7 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
 
     //发生改变时不能被更新的属性
     protected cannotUpdate:GearArray<keyof S> = new GearArray<keyof state>(["name","id"]);
+    protected concatInitial: boolean = true;
     constructor(props: P, context?: any) {
         super(props, context);
         this.state = <Readonly<S>>this.getInitState();
@@ -50,7 +51,7 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
     protected getConcatInitialState() {
         let state = this.getInitialState();
         let __super = this.getSuper();
-        while(__super && __super.getSuper) {
+        while(__super && __super.getSuper && this.concatInitial) {
             let fn = __super.getInitialState;
             if(fn) {
                 let superState = fn.bind(this)();
@@ -148,10 +149,10 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
     private getCommonsState(): state {
         let style = this.props.style || {};
         if(this.props.width != undefined) {
-            style.width = this.props.width;
+            style.width = this.props.width || "none";
         }
         if(this.props.height != undefined) {
-            style.height = this.props.height;
+            style.height = this.props.height || "none";
         }
         if(this.props.visible == false) {
             style.display = "none";

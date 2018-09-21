@@ -14,7 +14,7 @@ export var props = {
     //提示信息，如不设置，则会根据校验规则自动生成
     help: GearType.String,
     //label 标签的文本
-    label: GearType.String,
+    labelText: GearType.String,
     //label 标签布局，同 <Col> 组件，设置 span offset 值，如 {span: 3, offset: 12} 或 sm: {span: 3, offset: 12}
     lableCol: GearType.Object,
     //是否必填，如不设置，则会根据校验规则自动生成
@@ -37,7 +37,7 @@ export var props = {
     readOnly: GearType.Boolean,
     
     rules: GearType.Array<any>(),
-    value: GearType.String,
+    value: GearType.Any,
     ...Validate.props,
     ...Tag.props
 };
