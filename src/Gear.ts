@@ -26,6 +26,10 @@ export default class G {
     //所有的虚拟dom节点都存放在这个div中，这个div只在内存中存在
     static voidParent = document.createElement("div");
 
+    static cacheHtml:string = "";
+
+    static cacheAst: ASTElement;
+
     //渲染
     static render(renderOptions: RenderOptions) {
         //渲染指定节点下的控件
@@ -34,7 +38,10 @@ export default class G {
         let parser = new Parser();
         let astMsg  = parser.parse(el);
         let render = new Render();
-        render.render(astMsg.asts, astMsg.parent, renderOptions.mounted);
+        this.cacheHtml = astMsg.cacheHtml;
+        this.cacheAst = astMsg.ast;
+        render.render(astMsg.ast, astMsg.parent, renderOptions.mounted);
+        this.G$.merge
     }
 
     //注册自定义组件
@@ -81,7 +88,19 @@ export default class G {
                     return parser.parseToReactInstance(selector);
                 }
             }
-            let doms:JQuery<HTMLElement> = this.G$(selector);
+            let doms:JQuery<HTMLElement>|undefined = undefined;
+            let vmdoms = this.findVmDomFromCacheAst(selector);
+            if(vmdoms.length > 0) {
+                for(let i = 0; i < vmdoms.length; i++) {
+                    let vmdom = vmdoms[i];
+                    if(!doms) {
+                        doms = this.G$(vmdom.realDom);
+                    }else {
+                        doms = doms.add(vmdom.realDom);
+                    }
+                }
+            }
+            doms = doms || this.G$(selector);
             if(doms.length == 0){
                 doms = this.G$(this.voidParent).find(selector);
             }
@@ -161,7 +180,9 @@ export default class G {
                     if(name.indexOf(Constants.EXPAND_NAME) != -1) {
                         name = name.replace(Constants.EXPAND_NAME, '');
                     }
-                    doms[name] = fn;
+                    if(doms) {
+                        doms[name] = fn;
+                    }
                 });
                 doms.eq = (index:number)=>{
                     return eles[index];
@@ -192,6 +213,33 @@ export default class G {
         this.waitFuns.forEach(fun => {
             fun.call(this);
         });
+    }
+
+    private static findVmDomFromCacheAst(selector: string|Element) {
+        let vmdoms: any[] = [];
+        let jEleFromCache = G.G$(this.cacheHtml).find(selector);
+        if(jEleFromCache.length > 0 && this.cacheAst) {
+            jEleFromCache.each((i, ele)=>{
+                let index = this.G$(ele).attr(Constants.HTML_PARSER_DOM_INDEX);
+                if(index) {
+                    let indexs: string[] = index.split(",");
+                    let ast = this.cacheAst;
+                    for(let i = 1; i < indexs.length; i++) {
+                        let idx = indexs[i] ? parseInt(indexs[i]) : -1;
+                        if(ast) {
+                            ast = ast.children[idx];
+                        }else {
+                            break;
+                        }
+                    }
+                    if(ast && ast != this.cacheAst) {
+                        vmdoms.push(ast.vmdom);
+                    }
+                }
+            });
+            
+        }
+        return vmdoms;
     }
     
 }

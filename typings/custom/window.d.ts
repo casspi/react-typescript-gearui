@@ -13,7 +13,7 @@ interface GearJson<T> {
 
     clear():void;
 
-    new<T>(): GearJson<T>;
+    new<T>(objs?: any): GearJson<T>;
 }
 
 declare var GearJson: GearJson<any>;
@@ -36,7 +36,10 @@ interface GearArray<T> {
     new(arr?: Array<T>): GearArray<T>;
 }
 
-declare var GearArray: new<T>(arr?: Array<T>) => GearArray<T>;
+declare var GearArray: {
+    new<T>(arr?: Array<T>): GearArray<T>;
+    fromString(val: string,split:string): GearArray<string>|null;
+};
 interface RenderOptions {
     el: string|Element;
     mounted?(...tags: any[]): void;
@@ -82,6 +85,7 @@ declare var G: {
     voidParent: Element;
     tag: any;
     messager: Message;
+    utils: any;
 }
 interface Window extends EventTarget, WindowTimers, WindowSessionStorage, WindowLocalStorage, WindowConsole, GlobalEventHandlers, IDBEnvironment, WindowBase64, GlobalFetch {
     Blob: typeof Blob;
@@ -285,5 +289,6 @@ interface Window extends EventTarget, WindowTimers, WindowSessionStorage, Window
     GearJson: GearJson<any>;
     WXEnvironment: any;
     Constants: Constants;
+    _dialog: any;
 }
 declare var window: Window;

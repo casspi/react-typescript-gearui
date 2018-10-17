@@ -17,10 +17,6 @@ export interface state extends Button.state {
 
 export default class ClickAction<P extends typeof props, S extends state> extends Button.default<P, S> {
 
-    constructor(props: P, context?: any) {
-        super(props, context);
-    }
-
     getInitialState(): state {
         return {
             type: this.props.type,
@@ -53,13 +49,8 @@ export default class ClickAction<P extends typeof props, S extends state> extend
     }
 
     protected clickEvent(e?: any) {
-        let ret = this.doEvent("click", e);
-        if(ret!=null && ret instanceof Array){
-            for(let i=0;i<ret.length;i++){
-                if(ret[0]!=null && ret[0]==false){
-                    return;
-                }
-            }
+        if(this.doJudgementEvent("click",e)==false){
+            return;
         }
 
         let actionType = this.state.actionType;

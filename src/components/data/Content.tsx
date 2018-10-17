@@ -65,7 +65,7 @@ export default class Content<P extends typeof props, S extends state> extends Ta
         if(html){
             return G.$("<div>"+html+"</div>", true);
         }else
-            return null;
+            return this.props.children;
     }
 
 }

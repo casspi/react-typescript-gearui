@@ -27,6 +27,8 @@ class Constants {
 
     static SESSION_COOKIENAME = '__gsessionId';
 
+    static HTML_PARSER_DOM_INDEX = "__g_index_";
+
     //标签匹配
     static RQUICK_EXPR = /^(?:\s*(<[\w\W]+>)[^>]*|#([\w-]+))$/;
 

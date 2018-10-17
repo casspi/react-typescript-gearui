@@ -42,6 +42,9 @@ export default class Breadcrumb<P extends typeof props, S extends state> extends
     private getItems() {
         let itemJsxs: any[] = [];
         let children = this.props.children;
+        if(!(children instanceof Array)) {
+            children = [children];
+        }
         if(children instanceof Array) {
             children.map((child: any, index)=>{
                 let item = child;

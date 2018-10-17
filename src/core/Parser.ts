@@ -3,7 +3,7 @@ import { GearUtil, StringUtil } from "../utils";
 
 export default class Parser {
 
-    public parse(el: string|Element): {asts: ASTElement[], parent: Element} {
+    public parse(el: string|Element): {ast: ASTElement,cacheHtml: string, parent: Element} {
         let html:string = "";
         let parent:any = null;
         if(typeof el === "string") {
@@ -41,9 +41,11 @@ export default class Parser {
         }
         let parserHtml = new ParseHtml();
         html = "<div>" + html + "</div>";
-        let ast:ASTElement = parserHtml.parse(html);
+        let parseResult: {["ast"]: ASTElement,["cacheHtml"]: string} = parserHtml.parse(html);
+        let ast = parseResult.ast;
         return {
-            asts: ast.children,
+            ast: ast,
+            cacheHtml: parseResult.cacheHtml,
             parent: parent
         };
     }
@@ -52,7 +54,7 @@ export default class Parser {
     public parseToReactInstance(html: string) {
         let parserHtml = new ParseHtml();
         html = "<div>" + html + "</div>";
-        let ast:ASTElement = parserHtml.parse(html);
+        let ast:ASTElement = parserHtml.parse(html).ast;
         let reactEles: any = [];
         ast.children.forEach((ast)=>{
             let reactEle = GearUtil.newReactInstance(ast);

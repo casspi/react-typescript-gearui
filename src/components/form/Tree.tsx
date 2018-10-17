@@ -2,7 +2,7 @@ import * as FormTag from './FormTag';
 import * as React from 'react';
 import { Tree as AntdTree } from 'antd';
 //AntTreeNodeEvent,AntTreeNode,AntTreeNodeMouseEvent
-import { TreeProps as AntdTreeProps, AntTreeNode, AntTreeNodeMouseEvent } from 'antd/lib/tree';
+import { TreeProps as AntdTreeProps, AntTreeNode } from 'antd/lib/tree';
 import { Http, UUID } from '../../utils';
 import { methods } from '../../utils/http';
 import DicUtil from '../../utils/DicUtil';

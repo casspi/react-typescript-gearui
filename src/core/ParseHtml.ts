@@ -28,7 +28,7 @@ export default class ParseHtml {
         }
     }
 
-    public parse(template: string): ASTElement {
+    public parse(template: string): {["ast"]: ASTElement,["cacheHtml"]: string} {
         let compiler = new HtmlCompiler(template, this.finalOptions);
         return compiler.parse();
     }

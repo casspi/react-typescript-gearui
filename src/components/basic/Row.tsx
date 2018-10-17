@@ -38,6 +38,9 @@ export default class Row<P extends typeof props, S extends state> extends Tag.de
     private getCols() {
         let colJsxs: any[] = [];
         let children = this.props.children;
+        if(!(children instanceof Array)) {
+            children = [children];
+        }
         if(children instanceof Array) {
             children.map((child: any, index)=>{
                 let col = child;

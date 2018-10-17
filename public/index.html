@@ -61,7 +61,7 @@
       <!-- <g-tree url="getUrl()" checkbox="true" cascadeCheck="false" lines="true" onlyLeafCheck="true">
 
       </g-tree> -->
-      <g-combotree name="c31" label="URL" url="getUrl()" width="300" multiple="true" prompt="请选择">
+      <g-combotree name="c31" id="aw" label="URL" url="getUrl()" width="300" multiple="true" prompt="请选择">
 
       </g-combotree>
     </div>
@@ -94,8 +94,8 @@
     }
 
     G(function() {
-      //let text = G("[name='aaa']");
-      
+      let text = G("[name='c31']");
+      console.log(G.utils.ObjectUtil.isExtends(text, "Tag"));
       //G.messager.progress("open");
       
       // console.log(G.messager);

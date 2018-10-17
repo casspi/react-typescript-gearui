@@ -36,7 +36,7 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         this.state = <Readonly<S>>this.getInitState();
     }
 
-    protected getInitState(): state {
+    private getInitState(): state {
         let commonState = this.getCommonsState();
         let initState = this.getConcatInitialState();
         initState = G.G$.extend(commonState, initState);
@@ -86,6 +86,7 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         this.realDom = <Element>this.findRealDom();
         if(this.realDom) {
             G.G$(this.realDom).data("vmdom", this);
+            this.ast.vmdom = this;
         }
         this.afterRender();
         this.doEvent("afterRender");
@@ -116,13 +117,7 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
                 }
             }
         }
-        // for(let key in nextProps) {
-        //     let vInNextProps: any = nextProps[key];
-        //     let vInState: any = this.state[<any>key];
-        //     if(key in this.state && vInNextProps != vInState) {
-        //         state[<any>key] = vInNextProps;
-        //     }
-        // }
+        //返回将被更新至state中的属性
         let newState = this.afterReceiveProps(nextProps);
         if(newState && !G.G$.isEmptyObject(newState)) {
             state = G.G$.extend({}, state, newState);
@@ -133,11 +128,6 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
                 delete state[key];
             });
         }
-        // let keys = [];
-        // let keys = ["onChange", "onBlur", "style", "onClick", "onFocus", "onKeyDown", "onKeyPress", "onKeyUp", "onMouseDown", "onMouseMove", "onMouseOut", "onMouseOver", "onMouseUp", "onPressEnter", "category"];
-        // keys.forEach(key => {
-        //     delete state[key];
-        // });
         this.setState(state);
     }
 
@@ -264,14 +254,14 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
     }
 
     isEnable() {
-        if(this.state["disabled"]==true)
+        if(this.state.disabled==true)
             return false;
         else
             return true;
     }
 
     isDisabled() {
-        if(this.state["disabled"]==true)
+        if(this.state.disabled==true)
             return true;
         else
             return false;
@@ -281,6 +271,9 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         let style = this.state.style;
         if(style) {
             style.display = "block";
+            this.setState({
+                style
+            });
         }
     }
 
@@ -288,6 +281,9 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         let style = this.state.style;
         if(style) {
             style.display = "none";
+            this.setState({
+                style
+            });
         }
     }
 

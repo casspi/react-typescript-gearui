@@ -7,8 +7,9 @@ export default class Render {
      * @param asts ast树
      * @param parent 没有parent相当于从html直接渲染
      */
-    public render(asts: Array<ASTElement>, parent: Element, callback?: Function) {
+    public render(ast: ASTElement, parent: Element, callback?: Function) {
         let reactEles: any = [];
+        let asts = ast.children;
         asts.forEach((ast)=>{
             let reactEle = GearUtil.newReactInstance(ast);
             reactEles.push(reactEle);

@@ -163,7 +163,7 @@ export default abstract class FormTag<P extends typeof props, S extends state> e
 
     reset(){
         if(this.props.form) {
-            this.props.form.resetFieldValue(this.props.name);
+            this.props.form.reset(this.props.name);
         }
     }
 

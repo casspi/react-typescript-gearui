@@ -314,7 +314,10 @@ export default class ObjectUtil {
     }
 
     static isExtends(clazz: any, parent: string):boolean {
-        if(clazz && clazz.toString()) {
+        if(clazz && !(clazz instanceof Function) && clazz.__proto__ && clazz.__proto__ != Object && clazz.__proto__.constructor) {
+            clazz = clazz.__proto__.constructor;
+        }
+        if(clazz && clazz.toString() && clazz.name != "Object") {
             if(ObjectUtil.isInstance(clazz, parent)) {
                 return true;
             }
@@ -442,5 +445,125 @@ export default class ObjectUtil {
             return true;
         }
         return false;
+    }
+
+    // 解析字符串中的动态值{value}，支持以下几种格式
+    // {name}  默认处理方式，对部分html中的特殊字符进行转义，以防止破坏html格式
+    // {!name} 变量前有!，表示对获得的值要做转码处理，一般用于url
+    // {#name} 变量前有#，表示对获得的值不作任何处理
+    // {name:defaultValue} 可以在变量名称后指定默认值，当变量值取不到时使用默认值
+    // {!name:"defaultValue"} 可以为默认值加引号括起来，表示这个默认值是未转码过的，如果变量前有!，则应对默认值同样转码
+    // {!(age>34?'老了':'有点老了'):"defaultValue"} 也可以使用表达式
+    static parseDynamicValue(text:string,data: any){
+        try {
+            if(text && typeof text == "string"){
+                // 原始值在后台会被转义，因此这里需做一次反转义
+                text = text.replace(/&amp;/g,"&")
+                            .replace(/&lt;/g,"<")
+                            .replace(/&gt;/g,">")
+                            .replace(/&nbsp;/g," ")
+                            .replace(/&#39;/g,"\'")
+                            .replace(/&quot;/g,"\"");                   
+                //正则表达式中使用{}两个符号作为判断边界，因此如果表达式中如果使用这两个字符需转义   
+                //console.log(text);           
+            	text = text.replace(/\\\{/g,"&#7B;").replace(/\\\}/g,"&#7D;");
+                text = text.replace(/\{([\!\#]?)((?:[a-zA-Z0-9_\-]+)|(?:\([^{}]+\)))(\:([^{}]*?))?\}/g,function(match,m0,m1,m2,m3){
+					// m0：感叹号，如果有值表示值需要做编码处理
+					// m1：变量名
+					// m2：默认值段，不存在则表示无默认值
+                    // m3：默认值		
+					var value = null;
+                    var propertyName = m1;
+                    if (data[propertyName] != null) {
+                        value = data[propertyName];
+                        if(value && typeof value == "object"){
+                            value = JSON.stringify(value);
+                        }                   
+                    }else if(/^\(.+\)$/.test(propertyName)){
+                        // 用括号括起的，认为可能是表达式，下面去除括号
+                        propertyName = propertyName.substring(1,propertyName.length-1);
+                        // 取消对{}两个字符的转义
+                        propertyName = propertyName.replace(/\&\#7B;/g,"{").replace(/\&\#7D;/g,"}");                        
+						var fun = function(){
+                            var script;
+							try{
+								var expression = "";
+								for(var k in data){
+									var v = data[k];
+									if(v!=null){
+                                        if(typeof v == "object"){
+                                            v = JSON.stringify(v);
+                                        }
+										if(typeof v == "string"){
+                                            expression = expression + "var "+k+"=\""+(v+"").replace(/\\/g,"\\\\").replace(/\"/g,"\\\"").replace(/\n/g,"\\n").replace(/\r/g,"\\r")+"\";\n";
+										}else{
+                                            v = v + "";
+                                            if(v.length==0)
+                                                expression = expression + "var "+k+"=null;\n";
+                                            else
+											    expression = expression + "var "+k+"="+v+";\n";
+										}
+									}else{
+										expression = expression + "var "+k+"=null;\n";
+									}
+                                }
+                                script = expression+propertyName;
+								return eval(script);
+							} catch (error) {
+                                console.error("=======================================");
+                                console.error(script);
+                                console.error("=======================================");
+								console.error(error);
+								return null;
+							}  							
+						};
+						value = fun.call(this);
+					}
+					if(value==null){
+						if(m2 && m3){
+							if(/^".+"$/.test(m3) || /^'.+'$/.test(m3)){
+								// 是使用引号包起来的，则认为是原始值，如果有!则需要转义
+								value = m3.replace(/^"(.+)"$/,"$1").replace(/^'(.+)'$/,"$1");
+							}else{
+								// 不需要转义
+								m0 = "";
+								value = m3;
+							}
+						}
+                    }
+					if(value==null)
+						return "";
+					else if(m0=="!")
+                        return encodeURIComponent(value);
+                    else if(m0=="#")
+						return value;
+					else{
+                        return (value+"").replace(/&/g, '&amp;')
+                                    .replace(/"/g, '&quot;')
+                                    .replace(/'/g, '&#39;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/\n/g, '&#10;');
+                    }
+                });
+                // 取消对{}两个字符的转义
+                text = text.replace(/\&\#7B;/g,"{").replace(/\&\#7D;/g,"}");
+            }
+            return text; 
+        } catch (error) {
+			console.error(error);
+            return text;
+        }      
+    }
+
+    //解析props中的动态值
+    public static parseDynamicProps(props: any, value: any) {
+        let propsNew: any = {};
+        for(let key in props) {
+            key = ObjectUtil.parseDynamicValue(key, value);
+            let valueInProps = ObjectUtil.parseDynamicValue(props[key], value);
+            propsNew[key] = valueInProps;
+        }
+        return propsNew;
     }
 }

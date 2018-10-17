@@ -16,7 +16,7 @@ export default class HtmlCompiler {
     stack: any[] = [];
     preserveWhitespace: boolean;
     root: any;
-    currentParent: any;
+    currentParent: ASTElement;
     inPre = false;
     warned = false;
     options: CompilerOptions;
@@ -27,7 +27,7 @@ export default class HtmlCompiler {
         this.options = options;
     }
 
-    parse(): ASTElement {
+    parse(): {["ast"]: ASTElement,["cacheHtml"]: string} {
         this.warn = this.options.warn || CompilerUtil.baseWarn;
         this.platformIsPreTag = this.options.isPreTag || CompilerUtil.no
         this.platformMustUseProp = this.options.mustUseProp || CompilerUtil.no
@@ -78,9 +78,12 @@ export default class HtmlCompiler {
 
                 // tree management
                 if (!this.root) {
+                    element.index = [0];
                     this.root = element;
                 }
                 if (this.currentParent && !element.forbidden) {
+                    element.index = element.index.concat(this.currentParent.index);
+                    element.index.push(this.currentParent.children.length);
                     this.currentParent.children.push(element);
                     element.parent = this.currentParent;
                 }
@@ -90,6 +93,7 @@ export default class HtmlCompiler {
                 } else {
                     this.closeElement(element);
                 }
+                return element.index;
             },
             end: () => {
                 // remove trailing whitespace
@@ -127,29 +131,38 @@ export default class HtmlCompiler {
                 ) {
                     return;
                 }
-                const children = this.currentParent.children;
+                const children: any = this.currentParent.children;
                 text = this.inPre || text.trim() ? this.isTextTag(this.currentParent) ? text : this.decodeHTMLCached(text)
                     // only preserve whitespace if its not right after a starting tag
                     : this.preserveWhitespace && children.length ? ' ' : ''
                 if (text) {
                     if (text !== ' ' || !children.length || children[children.length - 1].text !== ' ') {
+                        let index: number[] = [];
+                        index = index.concat(this.currentParent.index);
+                        index.push(this.currentParent.children.length);
                         children.push({
                             type: 3,
-                            text
+                            text,
+                            index
                         })
                     }
                 }
             },
-            comment(text: string) {
-                this.currentParent.children.push({
+            comment: (text: string) => {
+                const children: any = this.currentParent.children;
+                let index: number[] = [];
+                index = index.concat(this.currentParent.index);
+                index.push(this.currentParent.children.length);
+                children.push({
                     type: 3,
                     text,
-                    isComment: true
+                    isComment: true,
+                    index
                 })
             }
         });
-        htmlParser.parseHTML();
-        return this.root;
+        let cacheHtml = htmlParser.parseHTML();
+        return {"ast": this.root, "cacheHtml": cacheHtml};
     }
 
     private isTextTag(el: any): boolean {
@@ -199,7 +212,8 @@ export default class HtmlCompiler {
             attrsList: attrs,
             attrsMap: this.makeAttrsMap(attrs),
             parent,
-            children: []
+            children: [],
+            index:[]
         };
     }
 

@@ -3,7 +3,7 @@ import * as moment from 'moment';
 import * as FormTag from './FormTag';
 import * as React from 'react';
 // 推荐在入口文件全局设置 locale
-import '../../node_modules/moment/locale/zh-cn';
+import 'moment/locale/zh-cn';
 import Tag from '../Tag';
 moment.locale('zh-cn');
 const { MonthPicker, RangePicker } = DatePicker;

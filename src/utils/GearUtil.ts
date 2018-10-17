@@ -59,6 +59,7 @@ export default class GearUtil {
                 }
                 props = GearUtil.attrsToProps(attrs, clazz.props, ast);
                 props["voidElement"] = voidEle;
+                props["__ast__"] = ast;
             }else {
                 //html节点
                 clazz = tag;

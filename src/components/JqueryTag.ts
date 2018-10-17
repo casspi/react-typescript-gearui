@@ -3,6 +3,7 @@ import { Events } from '../core';
 import { ObjectUtil } from '../utils';
 const lowerFirst = require('lodash/lowerFirst');
 export var props = {
+    __ast__: GearType.Any,
     ...Events
 }
 export interface state {
@@ -25,8 +26,11 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
     //所有的事件
     events:{} = {};
 
+    ast: ASTElement;
+
     constructor(props?: P, context?: any) {
         super(props || <any>{}, context);
+        this.ast = this.props.__ast__;
         //绑定所有的props里面注册的事件
         this.bindAllEvents();
     }
@@ -839,7 +843,7 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
                             if(this["_" + key]) {
                                 return this["_" + key];
                             }
-                            if(propsTemplete[key].indexOf(Constants.TYPE.Number) != -1) {
+                            if(propsTemplete[key].indexOf(Constants.TYPE.Number) != -1 && ObjectUtil.isNumber(v)) {
                                 if(ObjectUtil.isNumber(v)) {
                                     if(ObjectUtil.isInteger(v)) {
                                         this["_" + key] = parseInt(v + "");
@@ -847,9 +851,13 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
                                         this["_" + key] = parseFloat(v + "");
                                     }
                                 }
-                            }else if(propsTemplete[key].indexOf(Constants.TYPE.String) != -1) {
+                                return this["_" + key];
+                            }
+                            if(propsTemplete[key].indexOf(Constants.TYPE.String) != -1 && typeof v == "string") {
                                 this["_" + key] = v + "";
-                            }else if(propsTemplete[key].indexOf(Constants.TYPE.Array) != -1) {
+                                return this["_" + key];
+                            }
+                            if(propsTemplete[key].indexOf(Constants.TYPE.Array) != -1 && v instanceof Array) {
                                 if(v instanceof Array){
                                     this["_" + key] = v;
                                 }else {
@@ -858,10 +866,10 @@ export default class JqueryTag<P extends typeof props, S extends state> extends 
                                         this["_" + key] = v.split(",");
                                     else
                                         this["_" + key] = [];
-                                } 
-                            }else {
-                                this["_" + key] = v;
+                                }
+                                return this["_" + key]; 
                             }
+                            this["_" + key] = v;
                             return this["_" + key];
                         },
                         set: function(v) {

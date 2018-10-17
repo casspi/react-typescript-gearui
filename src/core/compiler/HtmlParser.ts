@@ -36,12 +36,12 @@ const encodedAttrWithNewLines = /&(?:lt|gt|quot|amp|#10|#9);/g;
 const isIgnoreNewlineTag = CompilerUtil.makeMap('pre,textarea', true);
 const shouldIgnoreFirstNewline = (tag: any, html: any) => tag && isIgnoreNewlineTag(tag) && html[0] === '\n';
 
-
 export default class HtmlParser {
 
     isPlainTextElement = CompilerUtil.makeMap('script,style,textarea', true);
     options: CompilerOptions;
     html: string;
+    cacheHtml: string = "";
     index = 0;
     stack: any[] = [];
     lastTag: any;
@@ -60,9 +60,10 @@ export default class HtmlParser {
         this.canBeLeftOpenTag = this.options.canBeLeftOpenTag || CompilerUtil.no;
 
         let last;
+        let __this = this;
 
         while (this.html) {
-            last = this.html;
+            last = __this.html;
             // Make sure we're not in a plaintext content element like script/style
             if (!this.lastTag || !this.isPlainTextElement(this.lastTag)) {
                 let textEnd = this.html.indexOf('<');
@@ -83,7 +84,7 @@ export default class HtmlParser {
                         const conditionalEnd = this.html.indexOf(']>');
 
                         if (conditionalEnd >= 0) {
-                            this.advance(conditionalEnd + 2);
+                            this.cacheHtml += this.advance(conditionalEnd + 2);
                             continue;
                         }
                     }
@@ -91,7 +92,7 @@ export default class HtmlParser {
                         const conditionalEnd = this.html.indexOf(']>');
 
                         if (conditionalEnd >= 0) {
-                            this.advance(conditionalEnd + 2);
+                            this.cacheHtml += this.advance(conditionalEnd + 2);
                             continue;
                         }
                     }
@@ -99,7 +100,7 @@ export default class HtmlParser {
                     // Doctype:
                     const doctypeMatch = this.html.match(doctype);
                     if (doctypeMatch) {
-                        this.advance(doctypeMatch[0].length);
+                        this.cacheHtml += this.advance(doctypeMatch[0].length);
                         continue;
                     }
 
@@ -107,17 +108,25 @@ export default class HtmlParser {
                     const endTagMatch = this.html.match(endTag);
                     if (endTagMatch) {
                         const curIndex = this.index;
-                        this.advance(endTagMatch[0].length);
-                        this.parseEndTag(endTagMatch[1], curIndex, this.index);
+                        let cacheHtml = this.advance(endTagMatch[0].length);
+                        let index = this.parseEndTag(endTagMatch[1], curIndex, this.index);
+                        if(endTagMatch[1] === "br") {
+                            cacheHtml = cacheHtml.replace("</br", "</br "+ Constants.HTML_PARSER_DOM_INDEX +"=\"" + index.toString()+"\"");
+                        }
+                        if(endTagMatch[1] === "p") {
+                            cacheHtml = cacheHtml.replace("</p", "</p "+ Constants.HTML_PARSER_DOM_INDEX +"=\"" + index.toString()+"\"");
+                        }
+                        this.cacheHtml += cacheHtml;
                         continue;
                     }
 
                     // Start tag:
                     const startTagMatch = this.parseStartTag();
                     if (startTagMatch) {
-                        this.handleStartTag(startTagMatch);
+                        let index = this.handleStartTag(startTagMatch);
+                        this.cacheHtml = this.cacheHtml.replace("{" + Constants.HTML_PARSER_DOM_INDEX + "}", index.toString());
                         if (shouldIgnoreFirstNewline(this.lastTag, this.html)) {
-                            this.advance(1);
+                            this.cacheHtml += this.advance(1);
                         }
                         continue;
                     }
@@ -138,7 +147,7 @@ export default class HtmlParser {
                         rest = this.html.slice(textEnd);
                     }
                     text = this.html.substring(0, textEnd);
-                    this.advance(textEnd);
+                    this.cacheHtml += this.advance(textEnd);
                 }
 
                 if (textEnd < 0) {
@@ -180,6 +189,7 @@ export default class HtmlParser {
         }
         // Clean up any remaining tags
         this.parseEndTag();
+        return this.cacheHtml;
     }
 
     private decodeAttr(value: any, shouldDecodeNewlines: any) {
@@ -189,7 +199,9 @@ export default class HtmlParser {
 
     private advance(n: number) {
         this.index += n;
+        let cache = this.html.substring(0, n);
         this.html = this.html.substring(n)
+        return cache || "";
     }
 
     private parseStartTag() {
@@ -200,15 +212,16 @@ export default class HtmlParser {
                 attrs: [],
                 start: this.index
             }
-            this.advance(start[0].length)
+            this.cacheHtml += this.advance(start[0].length)
             let end, attr;
             while (!(end = this.html.match(startTagClose)) && (attr = this.html.match(attribute))) {
-                this.advance(attr[0].length);
+                this.cacheHtml += this.advance(attr[0].length);
                 match.attrs.push(attr);
             }
             if (end) {
+                this.cacheHtml += " " + Constants.HTML_PARSER_DOM_INDEX + "=\"{" + Constants.HTML_PARSER_DOM_INDEX + "}\"";
                 match.unarySlash = end[1];
-                this.advance(end[0].length);
+                this.cacheHtml += this.advance(end[0].length);
                 match.end = this.index;
                 return match;
             }
@@ -255,9 +268,12 @@ export default class HtmlParser {
             this.lastTag = tagName;
         }
 
+        let index: number[] = [];
+
         if (this.options.start) {
-            this.options.start(tagName, attrs, unary, match.start, match.end);
+            index = this.options.start(tagName, attrs, unary, match.start, match.end);
         }
+        return index;
     }
 
     private parseEndTag(tagName?: string, start?: any, end?: any) {
@@ -280,7 +296,7 @@ export default class HtmlParser {
             // If no tag name is provided, clean shop
             pos = 0;
         }
-
+        let index:number[] = [];
         if (pos >= 0) {
             // Close all the open elements, up the stack
             for (let i = this.stack.length - 1; i >= pos; i--) {
@@ -297,15 +313,16 @@ export default class HtmlParser {
             this.lastTag = pos && this.stack[pos - 1].tag;
         } else if (lowerCasedTagName === 'br') {
             if (this.options.start) {
-                this.options.start(tagName, [], true, start, end);
+                index = this.options.start(tagName, [], true, start, end);
             }
         } else if (lowerCasedTagName === 'p') {
             if (this.options.start) {
-                this.options.start(tagName, [], false, start, end);
+                index = this.options.start(tagName, [], false, start, end);
             }
             if (this.options.end) {
                 this.options.end(tagName, start, end);
             }
         }
+        return index;
     }
 }

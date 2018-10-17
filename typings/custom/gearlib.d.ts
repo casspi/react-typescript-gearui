@@ -89,6 +89,8 @@ interface ASTElement {
   alias?: any;
   iterator1?: any;
   iterator2?: any;
+  index: number[];
+  vmdom?: any;
 }
 
 interface ASTIfCondition {
@@ -161,4 +163,6 @@ interface Constants {
       CssProperties: string,
       Any: string,
   };
+
+  HTML_PARSER_DOM_INDEX: string;
 }
