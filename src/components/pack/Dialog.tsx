@@ -1,11 +1,12 @@
 import * as Tag from '../Tag';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
-import { Modal } from 'antd';
+import { Modal as AntdModal } from 'antd';
 import { ObjectUtil, UUID } from '../../utils';
 export var props = {
     ...Tag.props,
     footer: GearType.Or<boolean, string>(GearType.Boolean, GearType.String),
+    // footer: GearType.Boolean,
     maximized: GearType.Boolean,
     confirmLoading: GearType.Boolean,
     closable: GearType.Boolean,
@@ -20,7 +21,9 @@ export var props = {
     keyboard: GearType.Boolean,
     content: GearType.String,
     loadType: GearType.Enum<'async' | 'iframe'>(),
-    url: GearType.Or(GearType.String, GearType.Function)
+    url: GearType.Or(GearType.String, GearType.Function),
+    //是否可以拖动
+    dragable:GearType.Boolean
 }
 export interface state extends Tag.state {
     footer?: boolean | string;
@@ -42,6 +45,7 @@ export interface state extends Tag.state {
     destory?: boolean;
     loadType?: 'async' | 'iframe';
     url?: string | Function;
+    dragable?:boolean
 }
 
 export default class Dialog<P extends typeof props, S extends state> extends Tag.default<P, S> {
@@ -135,6 +139,7 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
             transitionName: this.state.transitionName,
             zIndex:this.state.zIndex,
             keyboard:this.state.keyboard,
+            dragable:this.state.dragable,
         });
         return props;
     }
@@ -146,11 +151,11 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
             width: this.props.width,
             height: this.props.height,
             confirmLoading: this.props.confirmLoading,
-            closable: this.props.closable,
-            mask: this.props.mask,
+            closable: this.props.closable !=false,
+            mask: this.props.mask !=false,
             confirmText: this.props.confirmText || "确定",
             cancelText: this.props.cancelText || "取消",
-            maskClosable: this.props.maskClosable,
+            maskClosable: this.props.maskClosable !=false,
             wrapClassName: this.props.wrapClassName,
             maskTransitionName: this.props.maskTransitionName,
             transitionName: this.props.transitionName,
@@ -159,9 +164,55 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
             content: this.props.content,
             loadType: this.props.loadType,
             url: this.props.url,
+            dragable: this.props.dragable != false,
+            visible: this.props.visible != false
         };
     }
+    // componentDidMount(){
+    //     super.componentDidMount()
+    //     if(this.state.dragable) this.dragEvent();
+    // }
+    dragEvent = ()=>{//拖拽效果
+        // if(this.state['dragable']){
+            console.log(this.ref.childNodes)
+            let dref = this.ref
+            let $ref = G.G$(this.ref);
+            $ref.on('mousedown','.ant-modal',function(ev: any){
+                dref.onselectstart=()=>{//禁止选中文字
+                    return false
+                }
+                let $modal =  G.$(this);
+                G.$(this).css({
+                    "left":G.$(this).offset().left+"px",
+                    "margin":0,
+                    "padding-bottom":0,   
+                })
+                let e = ev || window.event;
+                let disX = e.pageX-G.$(this).offset().left;     //点击时鼠标X坐标与元素原点距离
+                let disY = e.pageY-G.$(this).offset().top;     //点击时鼠标Y坐标与元素原点距离
+                G.G$(document).on("mousemove" , (ev: any)=>{
+                    var e = ev||window.event;
+                    var l = e.pageX-disX;
+                    var t = e.pageY-disY;
+                    if(l<0){
+                        l=0
+                    }else if(l>document.documentElement.clientWidth-$modal.width()){
+                            l = document.documentElement.clientWidth-$modal.width();
+                    }
+                    if(t<0){
+                        t=0
+                    }else if(t>document.documentElement.clientHeight-$modal.height()){
+                            t = document.documentElement.clientHeight-$modal.height();
+                    }
+                    $modal.css({'left': l +'px',"top":t+"px"});
+                })
+            })
 
+            document.addEventListener('mouseup',()=>{
+                G.G$(document).off("mousemove")
+            })
+        // }     
+    }
     open() {
         this.setState({
             visible: true
@@ -216,16 +267,32 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
     render() {
         let props = this.getProps();
         let children = this.getChildren();
+        
         if(this.state.destory) {
             return null;
         }
-        return <Modal {...props} getContainer={()=>{
+        let style:Object;
+        if(this.state.dragable){
+            style={
+                cursor:"move"
+            };
+        }else{
+            style={
+                cursor:"default"
+            };
+        }
+        return <AntdModal {...props} style={style} getContainer={()=>{
             this.ref = document.createElement("div");
             document.body.appendChild(this.ref);
+            if(this.state.dragable) this.dragEvent();
             return this.ref;
         }}>
             {children}
-        </Modal>;
+        </AntdModal>;
+    }
+
+    protected findRealDom() {
+        return this.ref;
     }
 
     private getChildren() {
@@ -233,6 +300,7 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
         if(content) {
             return G.$(content, true);
         }
+        console.log(this.props.children)
         return this.props.children;
     }
     
@@ -292,6 +360,18 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
                 return window._dialog[id];
             },
         }
+    }
+    //设置是否可以拖拽dragable值
+    setDragable(dragable:boolean){
+        this.setState({
+            dragable: dragable
+        });
+        if(dragable){
+            this.dragEvent()
+        }else{
+            let $ref = G.G$(this.ref);
+            $ref.off('mousedown','.ant-modal')
+        }     
     }
 
 }
