@@ -75,7 +75,7 @@
       </div>
     -->
     <g-button buttonStyle="danger" id="bbbttn">Danger</g-button>
-      <g-dialog id="dragDialog" title="0000"  dragable="false">
+      <g-dialog id="dragDialog" title="0000"  dragable="true">
         <g-button id='closeDrag'>关闭拖拽</g-button>
         <g-button id='openDrag' >打开拖拽</g-button>
       </g-dialog>
@@ -127,9 +127,9 @@
       // G("#openDrag").click(function(){
        
       // })
-      G('#dragDialog').setDragable(true);
       G('#dragDialog').setDragable(false)
-    console.log( G('#dragDialog'));
+      // G('#dragDialog').setDragable(true);
+
     })
   </script>
 </html>

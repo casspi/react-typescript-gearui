@@ -174,9 +174,9 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
     // }
     dragEvent = ()=>{//拖拽效果
         // if(this.state['dragable']){
-            console.log(this.ref.childNodes)
             let dref = this.ref
             let $ref = G.G$(this.ref);
+            console.log(G.G$(this.ref))
             $ref.on('mousedown','.ant-modal',function(ev: any){
                 dref.onselectstart=()=>{//禁止选中文字
                     return false
@@ -362,15 +362,17 @@ export default class Dialog<P extends typeof props, S extends state> extends Tag
         }
     }
     //设置是否可以拖拽dragable值
-    setDragable(dragable:boolean){
+    setDragable (dragable:boolean)=>{
         this.setState({
             dragable: dragable
         });
         if(dragable){
+            console.log(G.G$(this.ref));
             this.dragEvent()
         }else{
             let $ref = G.G$(this.ref);
-            $ref.off('mousedown','.ant-modal')
+            $ref.off('mousedown','.ant-modal');
+            alert('off')
         }     
     }
 
