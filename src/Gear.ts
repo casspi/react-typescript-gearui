@@ -41,7 +41,6 @@ export default class G {
         this.cacheHtml = astMsg.cacheHtml;
         this.cacheAst = astMsg.ast;
         render.render(astMsg.ast, astMsg.parent, renderOptions.mounted);
-        this.G$.merge
     }
 
     //注册自定义组件
