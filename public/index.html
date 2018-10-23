@@ -43,27 +43,44 @@
         </g-breadcrumb-item>
       </g-breadcrumb> -->
       <!-- <g-ajaxaction buttonstyle="primary" url="getUrl()" method="delete"></g-ajaxaction>
-      <g-group name="aaa"></g-group> -->
-      <!-- <g-row id="aaa">
+      <g-group name="aaa"></g-group> 
+      <g-row id="aaa">
         <g-col span="12" id="bbb">
           <g-buttongroup>
             <g-button buttonstyle="primary">aa</g-button>
             <g-button buttonstyle="primary">bb</g-button>
           </g-buttongroup>
         </g-col>
-        <g-col span="12" id="bbb">
+        <g-col span="12" id="bbbb">
           <g-buttongroup>
             <g-button buttonstyle="primary">aa</g-button>
             <g-button buttonstyle="primary">bb</g-button>
           </g-buttongroup>
         </g-col>
-      </g-row> -->
-      <!-- <g-tree url="getUrl()" checkbox="true" cascadeCheck="false" lines="true" onlyLeafCheck="true">
+      </g-row>
+       <g-tree url="getUrl()" checkbox="true" cascadeCheck="false" lines="true" onlyLeafCheck="true">
 
-      </g-tree> -->
+      </g-tree>
       <g-combotree name="c31" id="aw" label="URL" url="getUrl()" width="300" multiple="true" prompt="请选择">
 
       </g-combotree>
+      <g-button>0000</g-button>
+      <g-button buttonStyle="danger">rest</g-button>
+      
+      <div>
+        <g-button buttonStyle="primary">Primary</g-button>
+        <g-button>Default</g-button>
+        <g-button buttonStyle="dashed">Dashed</g-button>
+        <g-button buttonStyle="danger">Danger</g-button>
+      </div>
+    -->
+    <g-button buttonStyle="danger" id="bbbttn">Danger</g-button>
+      <g-dialog id="dragDialog" title="0000"  dragable="true">
+        <g-button id='closeDrag'>关闭拖拽</g-button>
+        <g-button id='openDrag' >打开拖拽</g-button>
+      </g-dialog>
+      <!-- <g-dialog children="<h1>wode</h1>" open></g-dialog> -->
+      <!-- <g-alert type='info' message="Info Text"></g-alert> -->
     </div>
     <!--
       This HTML file is a template.
@@ -92,14 +109,27 @@
     function testAfterRender() {
       console.log(this);
     }
-
+    
     G(function() {
-      let text = G("[name='c31']");
-      console.log(G.utils.ObjectUtil.isExtends(text, "Tag"));
+      //let text = G("[name='c31']");
+      //console.log(G.utils.ObjectUtil.isExtends(text, "Tag"));
       //G.messager.progress("open");
       
       // console.log(G.messager);
       // console.log(text.isFormTag());
-    });
+    //   G('#closeDrag').click(function(){
+    //     G('#dragDialog').setDragable(false)
+    // })
+    // G('#openDrag').click(function(){
+    //   alert(111)
+    //     G('#dragDialog').setDragable(true)
+    // })
+      // G("#openDrag").click(function(){
+       
+      // })
+      G('#dragDialog').setDragable(false)
+      // G('#dragDialog').setDragable(true);
+
+    })
   </script>
 </html>

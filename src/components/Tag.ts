@@ -86,8 +86,8 @@ export default abstract class Tag<P extends typeof props, S extends state> exten
         this.realDom = <Element>this.findRealDom();
         if(this.realDom) {
             G.G$(this.realDom).data("vmdom", this);
-            this.ast.vmdom = this;
         }
+        this.ast.vmdom = this;
         this.afterRender();
         this.doEvent("afterRender");
     }
