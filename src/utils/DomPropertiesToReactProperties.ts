@@ -487,11 +487,12 @@ const possibleStandardNames = {
 export default class DomPropertiesToReactProperties {
 
     static getPossibleStandardName(propName: string) {
+  
         var lowerCasedName = propName.toLowerCase();
-        let possibleRegistrationNames = ReactDOM["__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED"].EventPluginRegistry.possibleRegistrationNames;
-        if (!possibleStandardNames.hasOwnProperty(lowerCasedName) && !possibleRegistrationNames[lowerCasedName]) {
-            return propName;
-        }
-        return possibleStandardNames[lowerCasedName] || possibleRegistrationNames[lowerCasedName] || propName;
+        // let possibleRegistrationNames = ReactDOM["__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED"].EventPluginRegistry.possibleRegistrationNames;
+        // if (!possibleStandardNames.hasOwnProperty(lowerCasedName) && !possibleRegistrationNames[lowerCasedName]) {
+        //     return propName;
+        // }
+        return possibleStandardNames[lowerCasedName] || propName;
     }
 }
